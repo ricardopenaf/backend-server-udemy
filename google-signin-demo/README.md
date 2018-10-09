@@ -7,6 +7,6 @@ Back End server.
 Recuerden que es necesario construir los módulos de
 node, en caso de que se quiera probar localmente.
 
-...
+```
 nmp install
-...
+```

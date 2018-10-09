@@ -1,4 +1,3 @@
-// Requires 
 var express = require('express');
 var bcrypt = require('bcrypt');
 var jwt = require('jsonwebtoken');
@@ -12,7 +11,6 @@ var Usuario = require('../models/usuario');
 //Google
 var CLIENT_ID = require('../config/config').CLIENT_ID;
 var GOOGLE_SECRET = require('../config/config').GOOGLE_SECRET;
-
 
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(CLIENT_ID);
@@ -33,7 +31,6 @@ async function verify(token) {
     // If request specified a G Suite domain:
     //const domain = payload['hd'];
 
-
     return {
         nonbre: payload.name,
         email: payload.email,
@@ -49,29 +46,28 @@ app.post('/google', async(req, res) => {
     var googleUser = await verify(token)
         .catch(e => {
             return res.status(403).json({
-                ok: false,
+                ok: true,
                 mensaje: 'Token no valido',
             });
         });
 
     Usuario.findOne({ email: googleUser.email }, (err, usuarioDB) => {
-
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Errort al buscar usuario',
+                mensaje: 'Error al buscar usuario',
                 errors: err
             });
         }
 
         if (usuarioDB) {
-
             if (usuarioDB.google === false) {
                 return res.status(400).json({
                     ok: false,
-                    mensaje: 'Debe usuar su autenticación normal',
+                    mensaje: 'Debe de usar su autenticación normal'
                 });
             } else {
+
                 var token = jwt.sign({ usuario: usuarioDB }, SEED, { expiresIn: 14400 }) //4horas
 
                 res.status(200).json({
@@ -81,43 +77,30 @@ app.post('/google', async(req, res) => {
                     id: usuarioDB._id
                 });
             }
-
         } else {
-            // El usuario no existe .... hay que crearlo
+            // El usuario no existe hay q crearlo
             var usuario = new Usuario();
 
-            usuario.nombre = googleUser.nombre;
+            usuario.nombre = googleUser.nonbre;
             usuario.email = googleUser.email;
             usuario.img = googleUser.img;
             usuario.google = true;
             usuario.password = ':)';
 
-
             usuario.save((err, usuarioDB) => {
+
                 var token = jwt.sign({ usuario: usuarioDB }, SEED, { expiresIn: 14400 }) //4horas
 
                 res.status(200).json({
                     ok: true,
                     usuario: usuarioDB,
-                    token: token
-                        //id: usuarioDB._id
+                    token: token,
+                    id: usuarioDB._id
                 });
             });
         }
-
     });
-
-
-    // return res.status(200).json({
-    //     ok: true,
-    //     mensaje: 'Ok!!!',
-    //     googleUser: googleUser
-    // });
 });
-
-
-
-
 
 
 //====================================================================
@@ -166,5 +149,7 @@ app.post('/', (req, res) => {
         });
     });
 });
+
+
 
 module.exports = app;
